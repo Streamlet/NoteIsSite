@@ -22,8 +22,8 @@ func newRouter(noteDir string, templateDir string) (http.Handler, error) {
 			}
 		} else {
 			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write(content)
 		}
+		_, _ = w.Write(content)
 	})
 
 	return mux, nil
