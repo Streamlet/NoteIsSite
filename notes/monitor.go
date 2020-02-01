@@ -13,22 +13,6 @@ type watcherHandler interface {
 	FileChanged(path string)
 }
 
-func watchDir(dir string, handler watcherHandler) error {
-	w, err := newWatcher()
-	if err != nil {
-		return err
-	}
-
-	err = w.addDirs(dir)
-	if err != nil {
-		return err
-	}
-
-	w.watch(handler)
-
-	return nil
-}
-
 type watcher struct {
 	inner *fsnotify.Watcher
 	dirs  map[string]bool
