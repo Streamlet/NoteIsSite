@@ -1,0 +1,13 @@
+# Site Config
+
+# root directory for notes, can be relative to working directory, or absolute
+note_dir = "/opt/notes"
+
+# root directory for html template, can be relative to working directory, or absolute
+template_dir = ".template"
+
+# port for the server to listening. If port is specified, sock MUST be empty string.
+port = 80
+
+# unix socket file for the server to listening. If sock is specified, port MUST be 0.
+# sock = "/var/run/note_is_site.sock"
