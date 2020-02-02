@@ -1,13 +1,13 @@
 package server
 
 import (
-	"github.com/Streamlet/NoteIsSite/notes"
+	"github.com/Streamlet/NoteIsSite/note"
 	"net/http"
 	"os"
 )
 
 func newRouter(noteRoot string, templateRoot string) (http.Handler, error) {
-	notesRouter, err := notes.NewRouter(noteRoot, templateRoot)
+	notesRouter, err := note.NewRouter(noteRoot, templateRoot)
 	if err != nil {
 		return nil, err
 	}

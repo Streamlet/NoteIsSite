@@ -1,4 +1,4 @@
-package notes
+package note
 
 import (
 	"github.com/Streamlet/NoteIsSite/config"
