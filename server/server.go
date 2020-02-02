@@ -13,18 +13,18 @@ type HttpServer interface {
 	Shutdown() error
 }
 
-func NewPortServer(port uint, noteDir string, templateDir string) (HttpServer, error) {
+func NewPortServer(port uint, noteRoot string, templateRoot string) (HttpServer, error) {
 	var err error
 	server := new(portServer)
-	server.Handler, err = newRouter(noteDir, templateDir)
+	server.Handler, err = newRouter(noteRoot, templateRoot)
 	server.port = port
 	return server, err
 }
 
-func NewSockServer(sock string, noteDir string, templateDir string) (HttpServer, error) {
+func NewSockServer(sock string, noteRoot string, templateRoot string) (HttpServer, error) {
 	var err error
 	server := new(sockServer)
-	server.Handler, err = newRouter(noteDir, templateDir)
+	server.Handler, err = newRouter(noteRoot, templateRoot)
 	server.sock = sock
 	return server, err
 }

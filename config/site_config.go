@@ -4,62 +4,82 @@ import (
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/Streamlet/NoteIsSite/util"
+	"regexp"
 )
 
-type SiteConfig interface {
-	GetNoteDir() string
-	GetTemplateDir() string
-	GetPort() uint
-	GetSock() string
+type SiteConfig struct {
+	Server   ServerConfig   `toml:"server"`
+	Template TemplateConfig `toml:"template"`
+	Note     NoteConfig     `tomp:"note"`
 }
 
-type siteConfig struct {
-	NoteDir     string `toml:"note_dir"`
-	TemplateDir string `toml:"template_dir"`
-	Port        uint   `toml:"port"` // If port is specified, sock MUST be empty string.
-	Sock        string `toml:"sock"` // sIf sock is specified, port MUST be 0.
+type ServerConfig struct {
+	Port uint   `toml:"port"` // If port is specified, sock MUST be empty string.
+	Sock string `toml:"sock"` // sIf sock is specified, port MUST be 0.
 }
 
-var siteConf *siteConfig
+type TemplateConfig struct {
+	TemplateRoot     string   `toml:"template_root"`
+	StaticDirs       []string `toml:"static_dirs"`
+	IndexTemplate    string   `toml:"index_template"`
+	CategoryTemplate string   `toml:"category_template"`
+	ContentTemplate  string   `toml:"content_template"`
+	ErrorPage404     string   `toml:"404"` // optional
+	ErrorPage500     string   `toml:"500"` // optional
+}
 
-func LoadSiteConfig(configPath string) (SiteConfig, error) {
-	util.Assert(siteConf == nil, "duplicately loading site config")
-	conf := new(siteConfig)
+type NoteConfig struct {
+	NoteRoot         string `toml:"note_root"`
+	CategoryFlagFile string `toml:"category_flag_file"`
+	NoteFilePattern  string `toml:"note_file_pattern"`
+	NoteFileRegExp   *regexp.Regexp
+}
+
+var siteConfig *SiteConfig
+
+func LoadSiteConfig(configPath string) error {
+	util.Assert(siteConfig == nil, "duplicate loading site config")
+	conf := new(SiteConfig)
 	if _, err := toml.DecodeFile(configPath, conf); err != nil {
-		return nil, err
+		return err
 	}
-	if conf.NoteDir == "" {
-		return nil, fmt.Errorf("note_dir MUST be set")
+	if conf.Server.Port == 0 && conf.Server.Sock == "" {
+		return fmt.Errorf("server.port or sock MUST be set")
 	}
-	if conf.TemplateDir == "" {
-		return nil, fmt.Errorf("template_dir MUST be set")
+	if conf.Server.Port > 0 && conf.Server.Sock != "" {
+		return fmt.Errorf("server.port and server.sock can NOT be both set")
 	}
-	if conf.Port == 0 && conf.Sock == "" {
-		return nil, fmt.Errorf("port or sock MUST be set")
+	if conf.Template.TemplateRoot == "" {
+		return fmt.Errorf("template.template_root MUST be set")
 	}
-	if conf.Port > 0 && conf.Sock != "" {
-		return nil, fmt.Errorf("port and sock can NOT be both set")
+	if conf.Template.IndexTemplate == "" {
+		return fmt.Errorf("template.index_template MUST be set")
 	}
-	siteConf = conf
-	return siteConf, nil
+	if conf.Template.CategoryTemplate == "" {
+		return fmt.Errorf("template.category_template MUST be set")
+	}
+	if conf.Template.ContentTemplate == "" {
+		return fmt.Errorf("template.content_template MUST be set")
+	}
+	if conf.Note.NoteRoot == "" {
+		return fmt.Errorf("note.note_root MUST be set")
+	}
+	if conf.Note.CategoryFlagFile == "" {
+		return fmt.Errorf("note.category_flag_file MUST be set")
+	}
+	if conf.Note.NoteFilePattern == "" {
+		return fmt.Errorf("note.note_file_pattern MUST be set")
+	}
+	regex, err := regexp.Compile(conf.Note.NoteFilePattern)
+	if err != nil {
+		return err
+	}
+	conf.Note.NoteFileRegExp = regex
+	siteConfig = conf
+	return nil
 }
 
-func GetSiteConfig() SiteConfig {
-	util.Assert(siteConf != nil, "use site config before loading")
-	return siteConf
-}
-
-func (c siteConfig) GetNoteDir() string {
-	return c.NoteDir
-}
-
-func (c siteConfig) GetTemplateDir() string {
-	return c.TemplateDir
-}
-
-func (c siteConfig) GetPort() uint {
-	return c.Port
-}
-func (c siteConfig) GetSock() string {
-	return c.Sock
+func GetSiteConfig() *SiteConfig {
+	util.Assert(siteConfig != nil, "use site config before loading")
+	return siteConfig
 }

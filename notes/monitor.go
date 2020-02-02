@@ -83,3 +83,7 @@ func (w watcher) watch(handler watcherHandler) {
 		}
 	}()
 }
+
+func (w watcher) close() error {
+	return w.inner.Close()
+}

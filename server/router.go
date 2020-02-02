@@ -6,8 +6,8 @@ import (
 	"os"
 )
 
-func newRouter(noteDir string, templateDir string) (http.Handler, error) {
-	notesRouter, err := notes.NewRouter(noteDir, templateDir)
+func newRouter(noteRoot string, templateRoot string) (http.Handler, error) {
+	notesRouter, err := notes.NewRouter(noteRoot, templateRoot)
 	if err != nil {
 		return nil, err
 	}
