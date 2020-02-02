@@ -2,6 +2,7 @@ package template
 
 import (
 	"bytes"
+	"github.com/Streamlet/NoteIsSite/config"
 	"io/ioutil"
 	"sync"
 	"text/template"
@@ -28,7 +29,7 @@ type SubItem struct {
 }
 
 type Executor interface {
-	Update(templateDir string) error
+	Update(templateRoot string) error
 
 	GetIndex(data IndexData) ([]byte, error)
 	GetCategory(data CategoryData) ([]byte, error)
@@ -38,9 +39,9 @@ type Executor interface {
 	Get500() []byte
 }
 
-func NewExecutor(templateDir string) (Executor, error) {
+func NewExecutor(templateRoot string) (Executor, error) {
 	td := new(templateData)
-	err := td.Update(templateDir)
+	err := td.Update(templateRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -56,27 +57,22 @@ type templateData struct {
 	err500           []byte
 }
 
-func (td *templateData) Update(templateDir string) error {
-	index, err := ioutil.ReadFile(templateDir + "/index.template.html")
+func (td *templateData) Update(templateRoot string) error {
+	c := config.GetSiteConfig().Template
+	index, err := ioutil.ReadFile(templateRoot + "/" + c.IndexTemplate)
 	if err != nil {
 		return err
 	}
-	category, err := ioutil.ReadFile(templateDir + "/category.template.html")
+	category, err := ioutil.ReadFile(templateRoot + "/" + c.CategoryTemplate)
 	if err != nil {
 		return err
 	}
-	content, err := ioutil.ReadFile(templateDir + "/content.template.html")
+	content, err := ioutil.ReadFile(templateRoot + "/" + c.ContentTemplate)
 	if err != nil {
 		return err
 	}
-	err404, err := ioutil.ReadFile(templateDir + "/404.html")
-	if err != nil {
-		return err
-	}
-	err500, err := ioutil.ReadFile(templateDir + "/500.html")
-	if err != nil {
-		return err
-	}
+	err404, _ := ioutil.ReadFile(templateRoot + "/" + c.ErrorPage404)
+	err500, _ := ioutil.ReadFile(templateRoot + "/" + c.ErrorPage500)
 
 	defer td.lock.Unlock()
 	td.lock.Lock()

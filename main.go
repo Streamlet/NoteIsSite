@@ -21,24 +21,25 @@ func main() {
 	flag.StringVar(&args.config, "config", "site.toml", "config file path")
 	flag.Parse()
 
-	conf, err := config.LoadSiteConfig(args.config)
+	err := config.LoadSiteConfig(args.config)
 	if err != nil {
 		fmt.Printf("failed to load %s: %s\n", args.config, err.Error())
 		return
 	}
+	conf := config.GetSiteConfig()
 
 	var srv server.HttpServer
-	if conf.GetSock() != "" {
-		srv, err = server.NewSockServer(conf.GetSock(), conf.GetNoteDir(), conf.GetTemplateDir())
-	} else if conf.GetPort() > 0 {
-		srv, err = server.NewPortServer(conf.GetPort(), conf.GetNoteDir(), conf.GetTemplateDir())
+	if conf.Server.Sock != "" {
+		srv, err = server.NewSockServer(conf.Server.Sock, conf.Note.NoteRoot, conf.Template.TemplateRoot)
+	} else if conf.Server.Port > 0 {
+		srv, err = server.NewPortServer(conf.Server.Port, conf.Note.NoteRoot, conf.Template.TemplateRoot)
 	} else {
 		util.Assert(false, "neither port or sock was specified")
 		return
 	}
 
 	if err != nil {
-		fmt.Printf("failed to init server with node dir '%s' and template dir '%s'\n", conf.GetNoteDir(), conf.GetTemplateDir())
+		fmt.Printf("failed to init server with node root '%s' and template root '%s'\n", conf.Note.NoteRoot, conf.Template.TemplateRoot)
 		return
 	}
 
@@ -46,18 +47,18 @@ func main() {
 
 	err = srv.Serve()
 	if err != nil {
-		fmt.Printf("failed to start server on sock '%s' or port %d\n", conf.GetSock(), conf.GetPort())
+		fmt.Printf("failed to start server on sock '%s' or port %d\n", conf.Server.Sock, conf.Server.Port)
 		return
 	}
 
 	fmt.Printf("Server started")
-	if conf.GetSock() != "" {
-		fmt.Printf(" on sock '%s'.\n", conf.GetSock())
-	} else if conf.GetPort() > 0 {
-		fmt.Printf(" on port %d.\n", conf.GetPort())
+	if conf.Server.Sock != "" {
+		fmt.Printf(" on sock '%s'.\n", conf.Server.Sock)
+	} else if conf.Server.Port > 0 {
+		fmt.Printf(" on port %d.\n", conf.Server.Port)
 	}
-	fmt.Printf("Note dir: %s\n", conf.GetNoteDir())
-	fmt.Printf("Template dir: %s\n", conf.GetTemplateDir())
+	fmt.Printf("Note root: %s\n", conf.Note.NoteRoot)
+	fmt.Printf("Template root: %s\n", conf.Template.TemplateRoot)
 	fmt.Printf("\n")
 
 	sig := make(chan os.Signal, 1)
