@@ -2,6 +2,7 @@ package note
 
 import (
 	"github.com/Streamlet/NoteIsSite/config"
+	"github.com/Streamlet/NoteIsSite/note/translator"
 	"github.com/Streamlet/NoteIsSite/template"
 	"github.com/Streamlet/NoteIsSite/util"
 	"io/ioutil"
@@ -215,7 +216,8 @@ func (n dirNode) GetContent() ([]byte, error) {
 }
 
 func (n fileNode) GetContent() ([]byte, error) {
-	c, err := ioutil.ReadFile(n.absolutePath)
+	t := translator.New(n.absolutePath)
+	content, err := t.Translate()
 	if err != nil {
 		if os.IsNotExist(err) {
 			return n.templateExecutor.Get404(), err
@@ -224,10 +226,10 @@ func (n fileNode) GetContent() ([]byte, error) {
 		}
 	}
 	if !n.isNote {
-		return c, nil
+		return content, nil
 	}
 	var data template.ContentData
 	data.Title = filepath.Base(n.uri)
-	data.Content = string(c)
+	data.Content = string(content)
 	return n.templateExecutor.GetContent(data)
 }
