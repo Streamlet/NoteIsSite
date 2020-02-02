@@ -15,16 +15,20 @@
 <hr />
 
 <h2>SubCategories:</h2>
-{{ range .SubCategories  }}
+{{ range .SubCategories }}
 <a href="{{ .Uri }}" >{{ .Name }}</a><br />
 {{- end }}
 
 <hr />
 
 <h2>Contents:</h2>
-{{ range .Contents  }}
+{{ range .Contents }}
 <a href="{{ .Uri }}" >{{ .Name }}</a><br />
 {{- end }}
+
+<hr />
+
+{{ .Content }}
 
 </body>
 

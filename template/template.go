@@ -11,6 +11,7 @@ import (
 type IndexData struct {
 	SubCategories []SubItem
 	Contents      []SubItem
+	Content       string
 }
 
 type CategoryData struct {

@@ -39,6 +39,8 @@ type dirItem struct {
 
 type dirNode struct {
 	fileNode
+	name    string
+	index   string
 	subUris []dirItem
 }
 
@@ -83,14 +85,14 @@ func (nr *notesRouter) rebuild() error {
 	}
 
 	nr.uriNodeMap = make(map[string]node)
-	if err := nr.buildTree("/", nr.noteRoot, true); err != nil {
+	if err := nr.buildTree("/", nr.noteRoot, true, nil); err != nil {
 		return err
 	}
 	if err := nr.watcher.addDirs(nr.noteRoot); err != nil {
 		return err
 	}
 	for _, dir := range config.GetSiteConfig().Template.StaticDirs {
-		if err := nr.buildTree("/"+dir+"/", nr.templateRoot+"/"+dir, false); err != nil {
+		if err := nr.buildTree("/"+dir+"/", nr.templateRoot+"/"+dir, false, nil); err != nil {
 			return err
 		}
 	}
@@ -113,31 +115,47 @@ func (nr notesRouter) Route(uri string) (content []byte, err error) {
 	return n.GetContent()
 }
 
-func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool) error {
+func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, parent *dirNode) error {
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return err
 	}
-	self := new(dirNode)
-	self.isNote = isNote
-	self.templateExecutor = nr.templateExecutor
-	self.absolutePath = dir
-	self.uri = baseUri
-	nr.uriNodeMap[baseUri] = self
+
+	if parent == nil {
+		parent = new(dirNode)
+		parent.isNote = isNote
+		parent.templateExecutor = nr.templateExecutor
+		parent.absolutePath = dir
+		parent.uri = baseUri
+		if conf, err := config.GetCategoryConfig(parent.absolutePath); err == nil && conf != nil {
+			parent.index = conf.Index
+		}
+		nr.uriNodeMap[parent.uri] = parent
+	}
+
 	for _, f := range files {
 		if f.IsDir() {
-			subUri := f.Name()
+			self := new(dirNode)
+			self.isNote = isNote
+			self.templateExecutor = nr.templateExecutor
+			self.absolutePath = dir + "/" + f.Name()
+			self.name = f.Name()
 			if isNote {
-				flag, err := ioutil.ReadFile(dir + "/" + f.Name() + "/" + config.GetSiteConfig().Note.CategoryFlagFile)
-				if err != nil {
+				conf, err := config.GetCategoryConfig(self.absolutePath)
+				if err != nil || conf == nil {
 					continue
 				}
-				if flag != nil && len(flag) > 0 {
-					subUri = strings.Split(string(flag), "\n")[0]
+				if conf.Name != "" {
+					self.name = conf.Name
 				}
-				self.subUris = append(self.subUris, dirItem{subUri, true})
+				if conf.Index != "" {
+					self.index = conf.Index
+				}
 			}
-			if err := nr.buildTree(baseUri+subUri+"/", dir+"/"+f.Name(), isNote); err != nil {
+			self.uri = baseUri + self.name + "/"
+			nr.uriNodeMap[self.uri] = self
+			parent.subUris = append(parent.subUris, dirItem{self.name, true})
+			if err := nr.buildTree(self.uri, dir+"/"+f.Name(), isNote, self); err != nil {
 				return err
 			}
 		} else {
@@ -150,14 +168,14 @@ func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool) error 
 				if len(matches) > 0 && len(matches[0]) > 1 {
 					subUri = matches[0][1]
 				}
-				self.subUris = append(self.subUris, dirItem{subUri, false})
+				parent.subUris = append(parent.subUris, dirItem{subUri, false})
 			}
-			n := new(fileNode)
-			n.isNote = isNote
-			n.templateExecutor = nr.templateExecutor
-			n.absolutePath = dir + "/" + f.Name()
-			n.uri = baseUri + subUri
-			nr.uriNodeMap[baseUri+subUri] = n
+			self := new(fileNode)
+			self.isNote = isNote
+			self.templateExecutor = nr.templateExecutor
+			self.absolutePath = dir + "/" + f.Name()
+			self.uri = baseUri + subUri
+			nr.uriNodeMap[self.uri] = self
 		}
 	}
 	return nil
@@ -206,6 +224,18 @@ func (n dirNode) GetContent() ([]byte, error) {
 		} else {
 			data.Contents = append(data.Contents, template.SubItem{Name: subUri.name, Uri: subUri.name})
 		}
+	}
+	if n.index != "" {
+		t := translator.New(n.absolutePath + "/" + n.index)
+		content, err := t.Translate()
+		if err != nil {
+			if os.IsNotExist(err) {
+				return n.templateExecutor.Get404(), err
+			} else {
+				return n.templateExecutor.Get500(), err
+			}
+		}
+		data.Content = string(content)
 	}
 	if n.uri == "/" {
 		return n.templateExecutor.GetIndex(data.IndexData)
