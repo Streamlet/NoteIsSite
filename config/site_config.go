@@ -29,10 +29,10 @@ type TemplateConfig struct {
 }
 
 type NoteConfig struct {
-	NoteRoot         string `toml:"note_root"`
-	CategoryFlagFile string `toml:"category_flag_file"`
-	NoteFilePattern  string `toml:"note_file_pattern"`
-	NoteFileRegExp   *regexp.Regexp
+	NoteRoot           string `toml:"note_root"`
+	CategoryConfigFile string `toml:"category_config_file"`
+	NoteFilePattern    string `toml:"note_file_pattern"`
+	NoteFileRegExp     *regexp.Regexp
 }
 
 var siteConfig *SiteConfig
@@ -64,7 +64,7 @@ func LoadSiteConfig(configPath string) error {
 	if conf.Note.NoteRoot == "" {
 		return fmt.Errorf("note.note_root MUST be set")
 	}
-	if conf.Note.CategoryFlagFile == "" {
+	if conf.Note.CategoryConfigFile == "" {
 		return fmt.Errorf("note.category_flag_file MUST be set")
 	}
 	if conf.Note.NoteFilePattern == "" {
