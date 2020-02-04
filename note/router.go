@@ -115,7 +115,7 @@ func (nr notesRouter) Route(uri string) (content []byte, err error) {
 	n, ok := nr.uriNodeMap[uri]
 	nr.lock.RUnlock()
 	if !ok {
-		return nil, os.ErrNotExist
+		return nr.templateExecutor.Get404(), os.ErrNotExist
 	}
 	return n.GetContent()
 }

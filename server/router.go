@@ -19,10 +19,10 @@ func newRouter(noteRoot string, templateRoot string) (http.Handler, error) {
 		content, err := notesRouter.Route(r.RequestURI)
 		if err != nil {
 			if os.IsNotExist(err) {
-				log.Println("404:", err.Error())
+				log.Println(r.RequestURI, "404:", err.Error())
 				w.WriteHeader(http.StatusNotFound)
 			} else {
-				log.Println("500:", err.Error())
+				log.Println(r.RequestURI, "500:", err.Error())
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 		} else {
