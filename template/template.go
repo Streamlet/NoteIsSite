@@ -9,24 +9,85 @@ import (
 )
 
 type IndexData struct {
-	SubCategories []SubItem
-	Contents      []SubItem
-	Content       string
+	HasSubItems
+	HasContent
 }
 
 type CategoryData struct {
 	Name string
-	IndexData
+	HasSubItems
+	HasContent
+	HasParentItems
 }
 
 type ContentData struct {
-	Title   string
+	Title string
+	HasContent
+	HasParentItems
+}
+
+type HasSubItems struct {
+	SubCategories []BasicItem
+	Contents      []BasicItem
+}
+
+func (data HasSubItems) HasChildren() bool {
+	return len(data.SubCategories) > 0 || len(data.Contents) > 0
+}
+
+func (data HasSubItems) Children() []BasicItem {
+	return append(data.SubCategories, data.Contents...)
+}
+
+type HasContent struct {
 	Content string
 }
 
-type SubItem struct {
+type HasParentItems struct {
+	// Parents[0] is the root items, that is, sub items of index
+	// ...
+	// Parents[len(Parent)-3] is the grand parent items
+	// Parents[len(Parent)-2] is the parent items
+	// Parents[len(Parent)-1] is the brother items
+	Parents [][]ParentItem
+}
+
+func (data HasParentItems) Roots() []ParentItem {
+	if len(data.Parents) > 0 {
+		return data.Parents[0]
+	} else {
+		return nil
+	}
+}
+
+func (data HasParentItems) Brothers() []ParentItem {
+	if len(data.Parents) > 0 {
+		return data.Parents[len(data.Parents)-1]
+	} else {
+		return nil
+	}
+}
+
+func (data HasParentItems) Ancestors() []BasicItem {
+	ancestors := make([]BasicItem, len(data.Parents))
+	for i, l0 := range data.Parents {
+		for _, l1 := range l0 {
+			if l1.IsAncestor {
+				ancestors[i] = l1.BasicItem
+			}
+		}
+	}
+	return ancestors
+}
+
+type BasicItem struct {
 	Name string
 	Uri  string
+}
+
+type ParentItem struct {
+	BasicItem
+	IsAncestor bool
 }
 
 type Executor interface {

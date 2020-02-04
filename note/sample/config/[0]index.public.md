@@ -1,5 +1,8 @@
 # Site Config
 
+```toml
+# Site Config
+
 [server]
 
 # port for the server to listening. If port is specified, sock MUST be empty string.
@@ -35,3 +38,19 @@ category_config_file = "category.toml"
 # pattern of notes filename, only matched files will be public
 # the first capture group is the name of the file and will be the part of the url
 note_file_pattern = "^(?:\\[.*?\\])*(.*)\\.public\\.(?:txt|html|md)$"
+
+```
+
+# Category Config
+
+```toml
+# Category Config
+
+# name of the category
+# if empty, defaults to the directory name in file system
+name = "category_name"
+
+# index file of the category
+# the content of index file fills {{ .Content }} of the index template or category template
+index = "index.md"
+```
