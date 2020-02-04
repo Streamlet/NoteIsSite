@@ -2,7 +2,10 @@ package server
 
 import (
 	"github.com/Streamlet/NoteIsSite/note"
+	"log"
+	"mime"
 	"net/http"
+	"net/url"
 	"os"
 )
 
@@ -16,11 +19,24 @@ func newRouter(noteRoot string, templateRoot string) (http.Handler, error) {
 		content, err := notesRouter.Route(r.RequestURI)
 		if err != nil {
 			if os.IsNotExist(err) {
+				log.Println("404:", err.Error())
 				w.WriteHeader(http.StatusNotFound)
 			} else {
+				log.Println("500:", err.Error())
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 		} else {
+			if urlParts, err := url.Parse(r.RequestURI); err == nil {
+				path := urlParts.EscapedPath()
+				for i := len(path) - 1; i >= 0 && !os.IsPathSeparator(path[i]); i-- {
+					if path[i] == '.' {
+						if mimeType := mime.TypeByExtension(path[i:]); mimeType != "" {
+							w.Header().Add("Content-Type", mimeType)
+						}
+						break
+					}
+				}
+			}
 			w.WriteHeader(http.StatusOK)
 		}
 		_, _ = w.Write(content)

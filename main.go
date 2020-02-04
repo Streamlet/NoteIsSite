@@ -39,7 +39,7 @@ func main() {
 	}
 
 	if err != nil {
-		fmt.Printf("failed to init server with node root '%s' and template root '%s'\n", conf.Note.NoteRoot, conf.Template.TemplateRoot)
+		fmt.Printf("failed to init server with node root '%s' and template root '%s': %s.\n", conf.Note.NoteRoot, conf.Template.TemplateRoot, err.Error())
 		return
 	}
 
@@ -47,7 +47,7 @@ func main() {
 
 	err = srv.Serve()
 	if err != nil {
-		fmt.Printf("failed to start server on sock '%s' or port %d\n", conf.Server.Sock, conf.Server.Port)
+		fmt.Printf("failed to start server on sock '%s' or port %d: %s.\n", conf.Server.Sock, conf.Server.Port, err.Error())
 		return
 	}
 
@@ -70,8 +70,6 @@ func main() {
 			fmt.Printf("Server shutdown.\n")
 		case err := <-global.GetErrorChan():
 			fmt.Printf("Server error: %s\n", err.Error())
-		default:
-			continue
 		}
 		break
 	}

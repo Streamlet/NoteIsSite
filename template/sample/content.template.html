@@ -10,12 +10,39 @@
 
 <body>
 
-<h1>{{ .Title }}</h1>
+<div>
+	{{ range .Roots }}
+		<a href="{{ .Uri }}" >{{ if .IsAncestor }}<strong>{{ end }}{{ .Name }}{{ if .IsAncestor }}</strong>{{ end }}</a>&nbsp;&nbsp;
+	{{- end }}
+</div>
 
+<div>
+	<h1>NoteIsSite Sample - {{ .Title }} </h1>
+</div>
 <hr />
 
 <div>
+	Current Position:
+	<a href="/" >HomePage</a>
+	{{ range .Ancestors }}
+		&gt;&gt; <a href="{{ .Uri }}" >{{ .Name }}</a>
+	{{- end }}
+</div>
+<hr />
+
+<div class="left">
+	{{ range .Brothers }}
+		<a href="{{ .Uri }}" >{{ if .IsAncestor }}<strong>{{ end }}{{ .Name }}{{ if .IsAncestor }}</strong>{{ end }}</a><br />
+	{{- end }}
+</div>
+
+<div class="right content">
 	{{ .Content }}
+</div>
+
+<div class="foot">
+	<hr />
+	Powered By Streamlet Studio.
 </div>
 
 </body>

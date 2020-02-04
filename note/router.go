@@ -32,23 +32,28 @@ type node interface {
 	GetContent() ([]byte, error)
 }
 
-type dirItem struct {
-	name  string
+type subItem struct {
+	uri   string
 	isDir bool
 }
 
 type dirNode struct {
-	fileNode
-	name    string
-	index   string
-	subUris []dirItem
+	nodeBasic
+	index    string
+	subItems []subItem
 }
 
 type fileNode struct {
+	nodeBasic
+}
+
+type nodeBasic struct {
 	isNote           bool
 	templateExecutor template.Executor
 	absolutePath     string
-	uri              string
+	absoluteUri      string
+	name             string
+	parent           *dirNode
 }
 
 func NewRouter(noteRoot string, templateRoot string) (Router, error) {
@@ -92,7 +97,7 @@ func (nr *notesRouter) rebuild() error {
 		return err
 	}
 	for _, dir := range config.GetSiteConfig().Template.StaticDirs {
-		if err := nr.buildTree("/"+dir+"/", nr.templateRoot+"/"+dir, false, nil); err != nil {
+		if err := nr.buildTree("/"+dir+"/", filepath.Join(nr.templateRoot, dir), false, nil); err != nil {
 			return err
 		}
 	}
@@ -126,11 +131,11 @@ func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, parent
 		parent.isNote = isNote
 		parent.templateExecutor = nr.templateExecutor
 		parent.absolutePath = dir
-		parent.uri = baseUri
+		parent.absoluteUri = baseUri
 		if conf, err := config.GetCategoryConfig(parent.absolutePath); err == nil && conf != nil {
 			parent.index = conf.Index
 		}
-		nr.uriNodeMap[parent.uri] = parent
+		nr.uriNodeMap[parent.absoluteUri] = parent
 	}
 
 	for _, f := range files {
@@ -138,8 +143,9 @@ func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, parent
 			self := new(dirNode)
 			self.isNote = isNote
 			self.templateExecutor = nr.templateExecutor
-			self.absolutePath = dir + "/" + f.Name()
+			self.absolutePath = filepath.Join(dir, f.Name())
 			self.name = f.Name()
+			self.parent = parent
 			if isNote {
 				conf, err := config.GetCategoryConfig(self.absolutePath)
 				if err != nil || conf == nil {
@@ -152,30 +158,31 @@ func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, parent
 					self.index = conf.Index
 				}
 			}
-			self.uri = baseUri + self.name + "/"
-			nr.uriNodeMap[self.uri] = self
-			parent.subUris = append(parent.subUris, dirItem{self.name, true})
-			if err := nr.buildTree(self.uri, dir+"/"+f.Name(), isNote, self); err != nil {
+			self.absoluteUri = baseUri + self.name + "/"
+			nr.uriNodeMap[self.absoluteUri] = self
+			parent.subItems = append(parent.subItems, subItem{self.name, true})
+			if err := nr.buildTree(self.absoluteUri, self.absolutePath, isNote, self); err != nil {
 				return err
 			}
 		} else {
-			subUri := f.Name()
+			self := new(fileNode)
+			self.isNote = isNote
+			self.templateExecutor = nr.templateExecutor
+			self.absolutePath = filepath.Join(dir, f.Name())
+			self.name = f.Name()
+			self.parent = parent
 			if isNote {
 				matches := config.GetSiteConfig().Note.NoteFileRegExp.FindAllStringSubmatch(f.Name(), -1)
 				if matches == nil {
 					continue
 				}
 				if len(matches) > 0 && len(matches[0]) > 1 {
-					subUri = matches[0][1]
+					self.name = matches[0][1]
 				}
-				parent.subUris = append(parent.subUris, dirItem{subUri, false})
+				parent.subItems = append(parent.subItems, subItem{self.name, false})
 			}
-			self := new(fileNode)
-			self.isNote = isNote
-			self.templateExecutor = nr.templateExecutor
-			self.absolutePath = dir + "/" + f.Name()
-			self.uri = baseUri + subUri
-			nr.uriNodeMap[self.uri] = self
+			self.absoluteUri = baseUri + self.name
+			nr.uriNodeMap[self.absoluteUri] = self
 		}
 	}
 	return nil
@@ -205,7 +212,7 @@ func (nr *notesRouter) FileChanged(path string) {
 
 func (nr *notesRouter) fsNotify(path string) {
 	basename := filepath.Base(path)
-	parentPath := strings.TrimSuffix(path, "/"+basename)
+	parentPath := strings.TrimSuffix(path, string(filepath.Separator)+basename)
 	if !strings.HasPrefix(path, nr.noteRoot) && parentPath == nr.templateRoot {
 		if err := nr.templateExecutor.Update(nr.templateRoot); err != nil {
 			log.Println(err.Error())
@@ -215,18 +222,43 @@ func (nr *notesRouter) fsNotify(path string) {
 	}
 }
 
+func (n nodeBasic) GetParents() template.HasParentItems {
+	var parents template.HasParentItems
+	parents.Parents = make([][]template.ParentItem, 0)
+
+	currentUri := strings.TrimRight(n.absoluteUri, "/")
+	for p := n.parent; p != nil; p = p.parent {
+		currentSubUri := strings.TrimPrefix(currentUri, p.absoluteUri)
+		currentUri = strings.TrimRight(p.absoluteUri, "/")
+		items := make([]template.ParentItem, 0, len(p.subItems))
+		for _, sub := range p.subItems {
+			var item template.ParentItem
+			item.Name = sub.uri
+			item.Uri = currentUri + "/" + sub.uri
+			if sub.isDir {
+				item.Uri += "/"
+			}
+			item.IsAncestor = sub.uri == currentSubUri
+			items = append(items, item)
+		}
+		parents.Parents = append([][]template.ParentItem{items}, parents.Parents...)
+	}
+	return parents
+}
+
 func (n dirNode) GetContent() ([]byte, error) {
 	util.Assert(n.isNote, "check code")
-	var data template.CategoryData
-	for _, subUri := range n.subUris {
+	var subData template.HasSubItems
+	for _, subUri := range n.subItems {
 		if subUri.isDir {
-			data.SubCategories = append(data.SubCategories, template.SubItem{Name: subUri.name, Uri: subUri.name + "/"})
+			subData.SubCategories = append(subData.SubCategories, template.BasicItem{Name: subUri.uri, Uri: subUri.uri + "/"})
 		} else {
-			data.Contents = append(data.Contents, template.SubItem{Name: subUri.name, Uri: subUri.name})
+			subData.Contents = append(subData.Contents, template.BasicItem{Name: subUri.uri, Uri: subUri.uri})
 		}
 	}
+	var contentData template.HasContent
 	if n.index != "" {
-		t := translator.New(n.absolutePath + "/" + n.index)
+		t := translator.New(filepath.Join(n.absolutePath, n.index))
 		content, err := t.Translate()
 		if err != nil {
 			if os.IsNotExist(err) {
@@ -235,12 +267,19 @@ func (n dirNode) GetContent() ([]byte, error) {
 				return n.templateExecutor.Get500(), err
 			}
 		}
-		data.Content = string(content)
+		contentData.Content = string(content)
 	}
-	if n.uri == "/" {
-		return n.templateExecutor.GetIndex(data.IndexData)
+	if n.absoluteUri == "/" {
+		var data template.IndexData
+		data.HasSubItems = subData
+		data.HasContent = contentData
+		return n.templateExecutor.GetIndex(data)
 	} else {
-		data.Name = filepath.Base(n.uri)
+		var data template.CategoryData
+		data.Name = n.name
+		data.HasSubItems = subData
+		data.HasContent = contentData
+		data.HasParentItems = n.GetParents()
 		return n.templateExecutor.GetCategory(data)
 	}
 }
@@ -259,7 +298,8 @@ func (n fileNode) GetContent() ([]byte, error) {
 		return content, nil
 	}
 	var data template.ContentData
-	data.Title = filepath.Base(n.uri)
+	data.Title = n.name
 	data.Content = string(content)
+	data.HasParentItems = n.GetParents()
 	return n.templateExecutor.GetContent(data)
 }
