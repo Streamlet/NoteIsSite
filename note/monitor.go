@@ -4,6 +4,7 @@ import (
 	"github.com/Streamlet/NoteIsSite/util"
 	"github.com/fsnotify/fsnotify"
 	"io/ioutil"
+	"log"
 	"os"
 )
 
@@ -77,8 +78,8 @@ func (w watcher) watch(handler watcherHandler) {
 						}
 					}
 				}
-			case <-w.inner.Errors:
-				break
+			case err := <-w.inner.Errors:
+				log.Println(err.Error())
 			}
 		}
 	}()

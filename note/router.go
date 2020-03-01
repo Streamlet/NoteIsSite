@@ -137,7 +137,6 @@ func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, parent
 		}
 		nr.uriNodeMap[parent.absoluteUri] = parent
 	}
-
 	for _, f := range files {
 		if f.IsDir() {
 			self := new(dirNode)
@@ -250,11 +249,11 @@ func (n dirNode) GetContent() ([]byte, error) {
 	util.Assert(n.isNote, "check code")
 	var subData template.HasSubItems
 	for _, subUri := range n.subItems {
+		uri := subUri.uri
 		if subUri.isDir {
-			subData.SubCategories = append(subData.SubCategories, template.BasicItem{Name: subUri.uri, Uri: subUri.uri + "/"})
-		} else {
-			subData.Contents = append(subData.Contents, template.BasicItem{Name: subUri.uri, Uri: subUri.uri})
+			uri += "/"
 		}
+		subData.SubItems = append(subData.SubItems, template.BasicItem{Name: subUri.uri, Uri: uri, IsDir: subUri.isDir})
 	}
 	var contentData template.HasContent
 	if n.index != "" {

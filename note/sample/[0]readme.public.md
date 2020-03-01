@@ -16,14 +16,14 @@ Traditional blog system, like wordpress, focus on the web appearance.
 They are "posts", not notes.
 
 Newborn blog system, like Huge, paid some attention to data source.
-But we should organize our notes under the rule of blog system, not as I wish.
-And it also need a publishing process, showing us there are notes, that is website.
+But we are required to organize our notes under the rule of blog system, not as I wish.
+And it also need a publishing process, showing us these are notes, that is website.
 
 # What does NoteIsSite do?
 
-NoteIsSite, as it named, is a actually a web server.
+NoteIsSite, as it named, is actually a web server.
 
-We could write notes in our folder structure,
+We could write notes in our own folder structure,
 and tell the web server where our notes locates, and which notes to show public through simple configuration.
 
 We could develop out website separately, with as few as 3 template pages.
