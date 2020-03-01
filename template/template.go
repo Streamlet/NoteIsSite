@@ -27,16 +27,15 @@ type ContentData struct {
 }
 
 type HasSubItems struct {
-	SubCategories []BasicItem
-	Contents      []BasicItem
+	SubItems []BasicItem
 }
 
 func (data HasSubItems) HasChildren() bool {
-	return len(data.SubCategories) > 0 || len(data.Contents) > 0
+	return len(data.SubItems) > 0
 }
 
 func (data HasSubItems) Children() []BasicItem {
-	return append(data.SubCategories, data.Contents...)
+	return data.SubItems
 }
 
 type HasContent struct {
@@ -81,8 +80,9 @@ func (data HasParentItems) Ancestors() []BasicItem {
 }
 
 type BasicItem struct {
-	Name string
-	Uri  string
+	Name  string
+	Uri   string
+	IsDir bool
 }
 
 type ParentItem struct {

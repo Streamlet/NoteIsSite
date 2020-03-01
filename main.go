@@ -47,7 +47,7 @@ func main() {
 
 	err = srv.Serve()
 	if err != nil {
-		fmt.Printf("failed to start server on sock '%s' or port %d: %s.\n", conf.Server.Sock, conf.Server.Port, err.Error())
+		fmt.Printf("failed to start server: %s.\n", err.Error())
 		return
 	}
 
