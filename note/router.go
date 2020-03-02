@@ -145,22 +145,31 @@ func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, parent
 			self.absolutePath = filepath.Join(dir, f.Name())
 			self.name = f.Name()
 			self.parent = parent
+			subIsNote := isNote
 			if isNote {
-				conf, err := config.GetCategoryConfig(self.absolutePath)
-				if err != nil || conf == nil {
-					continue
-				}
-				if conf.Name != "" {
-					self.name = conf.Name
-				}
-				if conf.Index != "" {
-					self.index = conf.Index
+				if conf, err := config.GetCategoryConfig(self.absolutePath); err == nil && conf != nil {
+					subIsNote = true
+					if conf.Name != "" {
+						self.name = conf.Name
+					}
+					if conf.Index != "" {
+						self.index = conf.Index
+					}
+				} else if conf, err := config.GetResourceConfig(self.absolutePath); err == nil && conf != nil {
+					subIsNote = false
+					if conf.Name != "" {
+						self.name = conf.Name
+					}
+				} else {
+				    continue
 				}
 			}
 			self.absoluteUri = baseUri + self.name + "/"
-			nr.uriNodeMap[self.absoluteUri] = self
-			parent.subItems = append(parent.subItems, subItem{self.name, true})
-			if err := nr.buildTree(self.absoluteUri, self.absolutePath, isNote, self); err != nil {
+			if !(isNote && !subIsNote) {
+				nr.uriNodeMap[self.absoluteUri] = self
+				parent.subItems = append(parent.subItems, subItem{self.name, true})
+			}
+			if err := nr.buildTree(self.absoluteUri, self.absolutePath, subIsNote, self); err != nil {
 				return err
 			}
 		} else {

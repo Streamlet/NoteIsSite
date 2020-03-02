@@ -1,3 +1,5 @@
+![Logo](images/logo.png)
+
 # Note system
 
 Traditional note system, like OneNote or Evernote, almost has powerful feature on note writing and note managing.
