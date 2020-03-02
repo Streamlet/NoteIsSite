@@ -1,4 +1,4 @@
-# Category
+# Category Config
 
 ```toml
 # Category Config
