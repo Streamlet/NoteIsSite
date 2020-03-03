@@ -20,7 +20,7 @@ and hide the prefix by "note_file_pattern" option in [site_config](../config/sit
 ### How to use images for notes?
 Make a directory and marked with "resource.toml" file in it.
 And then images in that directory can be referenced by notes.
-See [resource_onfig](../config/resource_config) for details.
+See [resource_config](../config/resource_config) for details.
 
 ### How many file formats are supported for writing notes?
 Currently only markdown is supported and recommended.
