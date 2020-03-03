@@ -19,7 +19,7 @@ The directory tree could be like this:
             + note7.md
 ```
 
-See [note section](note/) for details.
+See [note](note) section for details.
 
 ### How to show notes with web pages
 
@@ -44,7 +44,7 @@ For default config, we need a directory called "template_root", in the following
 "category.template.html" is used for all sub-directories in "note_root",
 and "content.template.html" is used for note files.
 
-See [template section](template/) for details.
+See [template](template) section for details.
 
 ### Is there a DEMO site?
 Yes. This site itself is served by NoteIsSite.
