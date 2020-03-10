@@ -32,6 +32,8 @@ func newRouter(noteRoot string, templateRoot string) (http.Handler, error) {
 					if path[i] == '.' {
 						if mimeType := mime.TypeByExtension(path[i:]); mimeType != "" {
 							w.Header().Add("Content-Type", mimeType)
+						} else {
+							w.Header().Add("Content-Type", "application/octet-stream")
 						}
 						break
 					}
