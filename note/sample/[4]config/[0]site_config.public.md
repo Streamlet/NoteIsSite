@@ -37,7 +37,7 @@ note_root = "note/sample"
 category_config_file = "category.toml"
 
 # pattern of notes filename, only matched files will be public
-# the first capture group is the name of the file and will be the part of the url
+# the first capture group is the name of the file and will be the part of the url. if it ends with '.', an ending slash '/' will be added to the url.
+# the second capture group, if exists, will be the display name of the item
 note_file_pattern = "^(?:\\[.*?\\])*(.*)\\.public\\.(?:txt|html|md)$"
-
 ```
