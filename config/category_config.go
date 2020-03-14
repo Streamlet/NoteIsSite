@@ -1,10 +1,16 @@
 package config
 
-import "github.com/BurntSushi/toml"
+import (
+	"github.com/BurntSushi/toml"
+	"regexp"
+)
 
 type CategoryConfig struct {
-	Name  string `toml:"name"`
-	Index string `toml:"index"`
+	DisplayName     string `toml:"display_name"`
+	Name            string `toml:"name"`
+	Index           string `toml:"index"`
+	NoteFilePattern string `toml:"note_file_pattern"`
+	NoteFileRegExp  *regexp.Regexp
 }
 
 func GetCategoryConfig(dirPath string) (*CategoryConfig, error) {
@@ -12,6 +18,13 @@ func GetCategoryConfig(dirPath string) (*CategoryConfig, error) {
 	conf := new(CategoryConfig)
 	if _, err := toml.DecodeFile(configPath, conf); err != nil {
 		return nil, err
+	}
+	if conf.NoteFilePattern != "" {
+		regex, err := regexp.Compile(conf.NoteFilePattern)
+		if err != nil {
+			return nil, err
+		}
+		conf.NoteFileRegExp = regex
 	}
 	return conf, nil
 }

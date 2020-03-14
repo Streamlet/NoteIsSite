@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 )
@@ -80,14 +81,14 @@ func (nr *notesRouter) rebuild() error {
 	}
 
 	nr.uriNodeMap = make(map[string]*node)
-	if err := nr.buildTree("/", nr.noteRoot, true, nil); err != nil {
+	if err := nr.buildTree("/", nr.noteRoot, true, config.GetSiteConfig().Note.NoteFileRegExp, nil); err != nil {
 		return err
 	}
 	if err := nr.watcher.addDirs(nr.noteRoot); err != nil {
 		return err
 	}
 	for _, dir := range config.GetSiteConfig().Template.StaticDirs {
-		if err := nr.buildTree("/"+dir+"/", filepath.Join(nr.templateRoot, dir), false, nil); err != nil {
+		if err := nr.buildTree("/"+dir+"/", filepath.Join(nr.templateRoot, dir), false, nil, nil); err != nil {
 			return err
 		}
 	}
@@ -102,7 +103,7 @@ func (nr *notesRouter) rebuild() error {
 
 func (nr notesRouter) Route(uri string) (content []byte, err error) {
 	nr.lock.RLock()
-	n, ok := nr.uriNodeMap[uri]
+	n, ok := nr.uriNodeMap[strings.ToLower(uri)]
 	nr.lock.RUnlock()
 	if !ok {
 		return nr.templateExecutor.Get404(), os.ErrNotExist
@@ -110,7 +111,7 @@ func (nr notesRouter) Route(uri string) (content []byte, err error) {
 	return n.GetContent()
 }
 
-func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, parent *node) error {
+func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, pattern *regexp.Regexp, parent *node) error {
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return err
@@ -138,14 +139,21 @@ func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, parent
 		if f.IsDir() {
 			self.subItems = make([]*node, 0)
 			subIsNote := isNote
+			uriName := self.name
 			if isNote {
 				if conf, err := config.GetCategoryConfig(self.absolutePath); err == nil && conf != nil {
 					subIsNote = true
+					if conf.DisplayName != "" {
+						self.name = conf.DisplayName
+					}
 					if conf.Name != "" {
-						self.name = conf.Name
+						uriName = conf.Name
 					}
 					if conf.Index != "" {
 						self.index = conf.Index
+					}
+					if conf.NoteFileRegExp != nil {
+						pattern = conf.NoteFileRegExp
 					}
 				} else if conf, err := config.GetResourceConfig(self.absolutePath); err == nil && conf != nil {
 					subIsNote = false
@@ -156,26 +164,39 @@ func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, parent
 					continue
 				}
 			}
-			self.absoluteUri = baseUri + self.name + "/"
+			self.absoluteUri = baseUri + strings.ToLower(uriName) + "/"
 			if !(isNote && !subIsNote) {
 				nr.uriNodeMap[self.absoluteUri] = self
 				parent.subItems = append(parent.subItems, self)
 			}
-			if err := nr.buildTree(self.absoluteUri, self.absolutePath, subIsNote, self); err != nil {
+			if err := nr.buildTree(self.absoluteUri, self.absolutePath, subIsNote, pattern, self); err != nil {
 				return err
 			}
 		} else {
+			uriName := self.name
 			if isNote {
-				matches := config.GetSiteConfig().Note.NoteFileRegExp.FindAllStringSubmatch(f.Name(), -1)
+				matches := pattern.FindAllStringSubmatch(f.Name(), -1)
 				if matches == nil {
 					continue
 				}
-				if len(matches) > 0 && len(matches[0]) > 1 {
-					self.name = matches[0][1]
+				if len(matches) > 0 {
+					if len(matches[0]) > 1 && len(matches[0][1]) > 0 {
+						uriName = matches[0][1]
+						if strings.HasSuffix(uriName, ".") {
+							uriName = uriName[:len(uriName)-1]
+							self.name = uriName
+							uriName += "/"
+						} else {
+							self.name = uriName
+						}
+					}
+					if len(matches[0]) > 2 && len(matches[0][2]) > 0 {
+						self.name = matches[0][2]
+					}
 				}
 				parent.subItems = append(parent.subItems, self)
 			}
-			self.absoluteUri = baseUri + self.name
+			self.absoluteUri = baseUri + strings.ToLower(uriName)
 			nr.uriNodeMap[self.absoluteUri] = self
 		}
 	}
