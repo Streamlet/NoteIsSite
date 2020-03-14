@@ -6,6 +6,7 @@ import (
 	"github.com/Streamlet/NoteIsSite/global"
 	"net"
 	"net/http"
+	"os"
 )
 
 type HttpServer interface {
@@ -66,6 +67,7 @@ func (s portServer) Shutdown() error {
 }
 
 func (s sockServer) Serve() error {
+	_ = os.Remove(s.sock)
 	l, err := net.Listen("unix", s.sock)
 	if err != nil {
 		return err
