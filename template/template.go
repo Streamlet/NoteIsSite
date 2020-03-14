@@ -8,94 +8,45 @@ import (
 	"text/template"
 )
 
-type IndexData struct {
-	HasSubItems
-	HasContent
+type BasicItem struct {
+	Uri        string
+	Name       string
+	IsAncestor bool
+	Children   []*BasicItem
+	Parent     *BasicItem
 }
 
-type CategoryData struct {
-	Name string
-	HasSubItems
-	HasContent
-	HasParentItems
-}
-
-type ContentData struct {
-	Title string
-	HasContent
-	HasParentItems
-}
-
-type HasSubItems struct {
-	SubItems []BasicItem
-}
-
-func (data HasSubItems) HasChildren() bool {
-	return len(data.SubItems) > 0
-}
-
-func (data HasSubItems) Children() []BasicItem {
-	return data.SubItems
-}
-
-type HasContent struct {
+type PageData struct {
+	*BasicItem
 	Content string
 }
 
-type HasParentItems struct {
-	// Parents[0] is the root items, that is, sub items of index
-	// ...
-	// Parents[len(Parent)-3] is the grand parent items
-	// Parents[len(Parent)-2] is the parent items
-	// Parents[len(Parent)-1] is the brother items
-	Parents [][]ParentItem
+func (item BasicItem) HasChildren() bool {
+	return item.Children != nil && len(item.Children) > 0
 }
 
-func (data HasParentItems) Roots() []ParentItem {
-	if len(data.Parents) > 0 {
-		return data.Parents[0]
-	} else {
-		return nil
+func (item BasicItem) Root() *BasicItem {
+	root := &item
+	for root.Parent != nil {
+		root = root.Parent
 	}
+	return root
 }
 
-func (data HasParentItems) Brothers() []ParentItem {
-	if len(data.Parents) > 0 {
-		return data.Parents[len(data.Parents)-1]
-	} else {
-		return nil
-	}
-}
-
-func (data HasParentItems) Ancestors() []BasicItem {
-	ancestors := make([]BasicItem, len(data.Parents))
-	for i, l0 := range data.Parents {
-		for _, l1 := range l0 {
-			if l1.IsAncestor {
-				ancestors[i] = l1.BasicItem
-			}
-		}
+func (item BasicItem) Ancestors() []*BasicItem {
+	ancestors := make([]*BasicItem, 0)
+	for p := item.Parent; p != nil; p = p.Parent {
+		ancestors = append([]*BasicItem{p}, ancestors...)
 	}
 	return ancestors
-}
-
-type BasicItem struct {
-	Name  string
-	Uri   string
-	IsDir bool
-}
-
-type ParentItem struct {
-	BasicItem
-	IsAncestor bool
 }
 
 type Executor interface {
 	Update(templateRoot string) error
 
-	GetIndex(data IndexData) ([]byte, error)
-	GetCategory(data CategoryData) ([]byte, error)
-	GetContent(data ContentData) ([]byte, error)
+	GetIndex(data PageData) ([]byte, error)
+	GetCategory(data PageData) ([]byte, error)
+	GetContent(data PageData) ([]byte, error)
 
 	Get404() []byte
 	Get500() []byte
@@ -148,21 +99,21 @@ func (td *templateData) Update(templateRoot string) error {
 	return nil
 }
 
-func (td templateData) GetIndex(data IndexData) ([]byte, error) {
+func (td templateData) GetIndex(data PageData) ([]byte, error) {
 	defer td.lock.RUnlock()
 	td.lock.RLock()
 
 	return td.execute(td.indexTemplate, data)
 }
 
-func (td templateData) GetCategory(data CategoryData) ([]byte, error) {
+func (td templateData) GetCategory(data PageData) ([]byte, error) {
 	defer td.lock.RUnlock()
 	td.lock.RLock()
 
 	return td.execute(td.categoryTemplate, data)
 }
 
-func (td templateData) GetContent(data ContentData) ([]byte, error) {
+func (td templateData) GetContent(data PageData) ([]byte, error) {
 	defer td.lock.RUnlock()
 	td.lock.RLock()
 

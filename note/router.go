@@ -21,15 +21,11 @@ type notesRouter struct {
 	noteRoot     string
 	templateRoot string
 
-	uriNodeMap map[string]node
+	uriNodeMap map[string]*node
 	lock       sync.RWMutex
 	watcher    *watcher
 
 	templateExecutor template.Executor
-}
-
-type node interface {
-	GetContent() ([]byte, error)
 }
 
 type subItem struct {
@@ -37,23 +33,17 @@ type subItem struct {
 	isDir bool
 }
 
-type dirNode struct {
-	nodeBasic
-	index    string
-	subItems []subItem
-}
-
-type fileNode struct {
-	nodeBasic
-}
-
-type nodeBasic struct {
+type node struct {
 	isNote           bool
 	templateExecutor template.Executor
 	absolutePath     string
 	absoluteUri      string
 	name             string
-	parent           *dirNode
+	parent           *node
+
+	// dir node only
+	subItems []*node
+	index    string
 }
 
 func NewRouter(noteRoot string, templateRoot string) (Router, error) {
@@ -89,7 +79,7 @@ func (nr *notesRouter) rebuild() error {
 		return err
 	}
 
-	nr.uriNodeMap = make(map[string]node)
+	nr.uriNodeMap = make(map[string]*node)
 	if err := nr.buildTree("/", nr.noteRoot, true, nil); err != nil {
 		return err
 	}
@@ -120,14 +110,14 @@ func (nr notesRouter) Route(uri string) (content []byte, err error) {
 	return n.GetContent()
 }
 
-func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, parent *dirNode) error {
+func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, parent *node) error {
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return err
 	}
 
 	if parent == nil {
-		parent = new(dirNode)
+		parent = new(node)
 		parent.isNote = isNote
 		parent.templateExecutor = nr.templateExecutor
 		parent.absolutePath = dir
@@ -135,16 +125,18 @@ func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, parent
 		if conf, err := config.GetCategoryConfig(parent.absolutePath); err == nil && conf != nil {
 			parent.index = conf.Index
 		}
+		parent.subItems = make([]*node, 0)
 		nr.uriNodeMap[parent.absoluteUri] = parent
 	}
 	for _, f := range files {
+		self := new(node)
+		self.isNote = isNote
+		self.templateExecutor = nr.templateExecutor
+		self.absolutePath = filepath.Join(dir, f.Name())
+		self.name = f.Name()
+		self.parent = parent
 		if f.IsDir() {
-			self := new(dirNode)
-			self.isNote = isNote
-			self.templateExecutor = nr.templateExecutor
-			self.absolutePath = filepath.Join(dir, f.Name())
-			self.name = f.Name()
-			self.parent = parent
+			self.subItems = make([]*node, 0)
 			subIsNote := isNote
 			if isNote {
 				if conf, err := config.GetCategoryConfig(self.absolutePath); err == nil && conf != nil {
@@ -161,24 +153,18 @@ func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, parent
 						self.name = conf.Name
 					}
 				} else {
-				    continue
+					continue
 				}
 			}
 			self.absoluteUri = baseUri + self.name + "/"
 			if !(isNote && !subIsNote) {
 				nr.uriNodeMap[self.absoluteUri] = self
-				parent.subItems = append(parent.subItems, subItem{self.name, true})
+				parent.subItems = append(parent.subItems, self)
 			}
 			if err := nr.buildTree(self.absoluteUri, self.absolutePath, subIsNote, self); err != nil {
 				return err
 			}
 		} else {
-			self := new(fileNode)
-			self.isNote = isNote
-			self.templateExecutor = nr.templateExecutor
-			self.absolutePath = filepath.Join(dir, f.Name())
-			self.name = f.Name()
-			self.parent = parent
 			if isNote {
 				matches := config.GetSiteConfig().Note.NoteFileRegExp.FindAllStringSubmatch(f.Name(), -1)
 				if matches == nil {
@@ -187,23 +173,13 @@ func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, parent
 				if len(matches) > 0 && len(matches[0]) > 1 {
 					self.name = matches[0][1]
 				}
-				parent.subItems = append(parent.subItems, subItem{self.name, false})
+				parent.subItems = append(parent.subItems, self)
 			}
 			self.absoluteUri = baseUri + self.name
 			nr.uriNodeMap[self.absoluteUri] = self
 		}
 	}
 	return nil
-}
-
-func (nr *notesRouter) findParent(parentPath string) (baseUri string, parent *dirNode) {
-	for uri, node := range nr.uriNodeMap {
-		if n, ok := node.(*dirNode); ok && n.absolutePath == parentPath {
-			parent = n
-			baseUri = uri
-		}
-	}
-	return
 }
 
 func (nr *notesRouter) FileCreated(path string) {
@@ -230,43 +206,45 @@ func (nr *notesRouter) fsNotify(path string) {
 	}
 }
 
-func (n nodeBasic) GetParents() template.HasParentItems {
-	var parents template.HasParentItems
-	parents.Parents = make([][]template.ParentItem, 0)
-
-	currentUri := strings.TrimRight(n.absoluteUri, "/")
-	for p := n.parent; p != nil; p = p.parent {
-		currentSubUri := strings.TrimPrefix(currentUri, p.absoluteUri)
-		currentUri = strings.TrimRight(p.absoluteUri, "/")
-		items := make([]template.ParentItem, 0, len(p.subItems))
-		for _, sub := range p.subItems {
-			var item template.ParentItem
-			item.Name = sub.uri
-			item.Uri = currentUri + "/" + sub.uri
-			if sub.isDir {
-				item.Uri += "/"
+func (n *node) toTemplateItem(parent *template.BasicItem, find *node) (itemForThis *template.BasicItem, itemForFind *template.BasicItem) {
+	itemForThis = new(template.BasicItem)
+	itemForThis.Parent = parent
+	itemForThis.Uri = n.absoluteUri
+	itemForThis.Name = n.name
+	if n.subItems != nil {
+		itemForThis.Children = make([]*template.BasicItem, 0)
+		for _, c := range n.subItems {
+			item, found := c.toTemplateItem(itemForThis, find)
+			itemForThis.Children = append(itemForThis.Children, item)
+			if found != nil {
+				itemForFind = found
 			}
-			item.IsAncestor = sub.uri == currentSubUri
-			items = append(items, item)
 		}
-		parents.Parents = append([][]template.ParentItem{items}, parents.Parents...)
 	}
-	return parents
+	if n == find {
+		util.Assert(itemForFind == nil, "data error")
+		itemForFind = itemForThis
+	}
+	return
 }
 
-func (n dirNode) GetContent() ([]byte, error) {
-	util.Assert(n.isNote, "check code")
-	var subData template.HasSubItems
-	for _, subUri := range n.subItems {
-		uri := subUri.uri
-		if subUri.isDir {
-			uri += "/"
+func (n *node) GetContent() ([]byte, error) {
+
+	var pageData *template.PageData
+	if n.isNote {
+		root := n
+		for root.parent != nil {
+			root = root.parent
 		}
-		subData.SubItems = append(subData.SubItems, template.BasicItem{Name: subUri.uri, Uri: uri, IsDir: subUri.isDir})
+		_, item := root.toTemplateItem(nil, n)
+		for p := item; p != nil; p = p.Parent {
+			p.IsAncestor = true
+		}
+		pageData = new(template.PageData)
+		pageData.BasicItem = item
 	}
-	var contentData template.HasContent
-	if n.index != "" {
-		t := translator.New(filepath.Join(n.absolutePath, n.index))
+	if n.subItems == nil {
+		t := translator.New(n.absolutePath)
 		content, err := t.Translate()
 		if err != nil {
 			if os.IsNotExist(err) {
@@ -275,39 +253,32 @@ func (n dirNode) GetContent() ([]byte, error) {
 				return n.templateExecutor.Get500(), err
 			}
 		}
-		contentData.Content = string(content)
-	}
-	if n.absoluteUri == "/" {
-		var data template.IndexData
-		data.HasSubItems = subData
-		data.HasContent = contentData
-		return n.templateExecutor.GetIndex(data)
-	} else {
-		var data template.CategoryData
-		data.Name = n.name
-		data.HasSubItems = subData
-		data.HasContent = contentData
-		data.HasParentItems = n.GetParents()
-		return n.templateExecutor.GetCategory(data)
-	}
-}
-
-func (n fileNode) GetContent() ([]byte, error) {
-	t := translator.New(n.absolutePath)
-	content, err := t.Translate()
-	if err != nil {
-		if os.IsNotExist(err) {
-			return n.templateExecutor.Get404(), err
+		if n.isNote {
+			pageData.Content = string(content)
+			return n.templateExecutor.GetContent(*pageData)
 		} else {
-			return n.templateExecutor.Get500(), err
+			return content, nil
 		}
+	} else {
+		util.Assert(n.isNote, "check code")
+		if n.index != "" {
+			t := translator.New(filepath.Join(n.absolutePath, n.index))
+			content, err := t.Translate()
+			if err != nil {
+				if os.IsNotExist(err) {
+					return n.templateExecutor.Get404(), err
+				} else {
+					return n.templateExecutor.Get500(), err
+				}
+			}
+			pageData.Content = string(content)
+		}
+		if n.parent == nil {
+			return n.templateExecutor.GetIndex(*pageData)
+		} else {
+			return n.templateExecutor.GetCategory(*pageData)
+		}
+
 	}
-	if !n.isNote {
-		return content, nil
-	}
-	var data template.ContentData
-	data.Title = n.name
-	data.Content = string(content)
-	data.HasParentItems = n.GetParents()
-	return n.templateExecutor.GetContent(data)
+
 }
