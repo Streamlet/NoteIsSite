@@ -12,7 +12,7 @@
 
 
 <div>
-	{{ range .Roots }}
+	{{ range .Root.Children }}
 		<a href="{{ .Uri }}" >{{ if .IsAncestor }}<strong>{{ end }}{{ .Name }}{{ if .IsAncestor }}</strong>{{ end }}</a>&nbsp;&nbsp;
 	{{- end }}
 </div>

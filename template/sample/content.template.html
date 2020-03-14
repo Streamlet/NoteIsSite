@@ -5,19 +5,19 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	<link href="/assets/sample.css" rel="stylesheet" />
 	<script type="text/javascript" src="/assets/sample.js"></script>
-	<title>{{ .Title }} - NoteIsSite Sample Content</title>
+	<title>{{ .Name }} - NoteIsSite Sample Content</title>
 </head>
 
 <body>
 
 <div>
-	{{ range .Roots }}
+	{{ range .Root.Children }}
 		<a href="{{ .Uri }}" >{{ if .IsAncestor }}<strong>{{ end }}{{ .Name }}{{ if .IsAncestor }}</strong>{{ end }}</a>&nbsp;&nbsp;
 	{{- end }}
 </div>
 
 <div>
-	<h1>NoteIsSite Sample - {{ .Title }} </h1>
+	<h1>NoteIsSite Sample - {{ .Name }} </h1>
 </div>
 <hr />
 
@@ -31,7 +31,7 @@
 <hr />
 
 <div class="left">
-	{{ range .Brothers }}
+	{{ range .Parent.Children }}
 		<a href="{{ .Uri }}" >{{ if .IsAncestor }}<strong>{{ end }}{{ .Name }}{{ if .IsAncestor }}</strong>{{ end }}</a><br />
 	{{- end }}
 </div>
