@@ -4,7 +4,7 @@
 # Category Config
 
 # display_name of the category
-# if empty, defaults to the directory name in file system
+# if empty, defaults to name
 display_name = "display_name"
 
 # name of the category
