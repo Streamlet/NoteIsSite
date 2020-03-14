@@ -148,11 +148,12 @@ func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, patter
 			if isNote {
 				if conf, err := config.GetCategoryConfig(self.absolutePath); err == nil && conf != nil {
 					subIsNote = true
-					if conf.DisplayName != "" {
-						self.name = conf.DisplayName
-					}
 					if conf.Name != "" {
 						uriName = conf.Name
+						self.name = conf.Name
+					}
+					if conf.DisplayName != "" {
+						self.name = conf.DisplayName
 					}
 					if conf.Index != "" {
 						self.index = conf.Index
