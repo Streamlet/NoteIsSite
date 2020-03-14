@@ -81,18 +81,18 @@ func (nr *notesRouter) rebuild() error {
 	}
 
 	nr.uriNodeMap = make(map[string]*node)
-	if err := nr.buildTree("/", nr.noteRoot, true, config.GetSiteConfig().Note.NoteFileRegExp, nil); err != nil {
-		return err
-	}
-	if err := nr.watcher.addDirs(nr.noteRoot); err != nil {
-		return err
-	}
 	for _, dir := range config.GetSiteConfig().Template.StaticDirs {
-		if err := nr.buildTree("/"+dir+"/", filepath.Join(nr.templateRoot, dir), false, nil, nil); err != nil {
+		if err := nr.buildTree("/", filepath.Join(nr.templateRoot, dir), false, nil, nil); err != nil {
 			return err
 		}
 	}
 	if err := nr.watcher.addDirs(nr.templateRoot); err != nil {
+		return err
+	}
+	if err := nr.buildTree("/", nr.noteRoot, true, config.GetSiteConfig().Note.NoteFileRegExp, nil); err != nil {
+		return err
+	}
+	if err := nr.watcher.addDirs(nr.noteRoot); err != nil {
 		return err
 	}
 
@@ -124,7 +124,12 @@ func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, patter
 		parent.absolutePath = dir
 		parent.absoluteUri = baseUri
 		if conf, err := config.GetCategoryConfig(parent.absolutePath); err == nil && conf != nil {
-			parent.index = conf.Index
+			if conf.Index != "" {
+				parent.index = conf.Index
+			}
+			if conf.NoteFileRegExp != nil {
+				pattern = conf.NoteFileRegExp
+			}
 		}
 		parent.subItems = make([]*node, 0)
 		nr.uriNodeMap[parent.absoluteUri] = parent
