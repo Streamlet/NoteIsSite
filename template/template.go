@@ -35,7 +35,7 @@ func (item BasicItem) Root() *BasicItem {
 
 func (item BasicItem) Ancestors() []*BasicItem {
 	ancestors := make([]*BasicItem, 0)
-	for p := item.Parent; p != nil; p = p.Parent {
+	for p := &item; p != nil; p = p.Parent {
 		ancestors = append([]*BasicItem{p}, ancestors...)
 	}
 	return ancestors
