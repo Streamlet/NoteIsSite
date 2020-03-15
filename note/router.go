@@ -224,7 +224,7 @@ func (nr *notesRouter) FileChanged(path string) {
 func (nr *notesRouter) fsNotify(path string) {
 	basename := filepath.Base(path)
 	parentPath := strings.TrimSuffix(path, string(filepath.Separator)+basename)
-	if !strings.HasPrefix(path, nr.noteRoot) && parentPath == nr.templateRoot {
+	if !strings.HasPrefix(path, filepath.FromSlash(nr.noteRoot)) && parentPath == filepath.FromSlash(nr.templateRoot) {
 		if err := nr.templateExecutor.Update(nr.templateRoot); err != nil {
 			log.Println(err.Error())
 		}
