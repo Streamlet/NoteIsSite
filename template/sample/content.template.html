@@ -25,7 +25,9 @@
 	Current Position:
 	<a href="/" >HomePage</a>
 	{{ range .Ancestors }}
+		{{ if ne .Uri "/" }}
 		&gt;&gt; <a href="{{ .Uri }}" >{{ .Name }}</a>
+		{{ end }}
 	{{- end }}
 </div>
 <hr />
