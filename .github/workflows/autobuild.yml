@@ -1,0 +1,50 @@
+name: autobuild
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  build:
+    name: Build
+    runs-on: ubuntu-18.04
+    steps:
+
+    - name: Set up Go 1.13
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.13.x
+      id: go
+
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Build
+      run: go build -v .
+
+    - name: Make package
+      run: tar -zcvf NoteIsSite.tar.gz NoteIsSite
+
+    - name: Create Release
+      id: create_release
+      uses: monkeyWie/create-release@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.sha }}
+        release_name: ${{ github.sha }}
+        draft: true
+        prerelease: true
+
+    - name: Upload Release
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./NoteIsSite.tar.gz
+        asset_name: NoteIsSite-${{ github.sha }}.tar.gz
+        asset_content_type: application/x-tgz
