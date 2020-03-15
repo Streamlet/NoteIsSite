@@ -1,3 +1,5 @@
+![autobuild](https://github.com/StreamletStudio/NoteIsSite/workflows/autobuild/badge.svg)
+
 # NoteIsSite
 a dynamic website system generated from notes.
 
