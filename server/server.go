@@ -77,5 +77,7 @@ func (s sockServer) Serve() error {
 }
 
 func (s sockServer) Shutdown() error {
-	return shutdown(&s.Server)
+	err := shutdown(&s.Server)
+	_ = os.Remove(s.sock)
+	return err
 }
