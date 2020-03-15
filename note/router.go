@@ -7,6 +7,7 @@ import (
 	"github.com/Streamlet/NoteIsSite/util"
 	"io/ioutil"
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -102,8 +103,13 @@ func (nr *notesRouter) rebuild() error {
 }
 
 func (nr notesRouter) Route(uri string) (content []byte, err error) {
+	normalizedUri, err := url.QueryUnescape(uri)
+	if err != nil {
+		return nil, err
+	}
+	normalizedUri = strings.ToLower(normalizedUri)
 	nr.lock.RLock()
-	n, ok := nr.uriNodeMap[strings.ToLower(uri)]
+	n, ok := nr.uriNodeMap[normalizedUri]
 	nr.lock.RUnlock()
 	if !ok {
 		return nr.templateExecutor.Get404(), os.ErrNotExist
