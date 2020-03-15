@@ -103,7 +103,7 @@ func (nr *notesRouter) rebuild() error {
 }
 
 func (nr notesRouter) Route(uri string) (content []byte, err error) {
-	normalizedUri, err := url.QueryUnescape(uri)
+	normalizedUri, err := url.PathUnescape(uri)
 	if err != nil {
 		return nil, err
 	}
