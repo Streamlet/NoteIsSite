@@ -15,8 +15,10 @@ type watcherHandler interface {
 }
 
 type watcher struct {
-	inner *fsnotify.Watcher
-	dirs  map[string]bool
+	inner   *fsnotify.Watcher
+	dirs    map[string]bool
+	closing chan bool
+	closed  chan bool
 }
 
 func newWatcher() (*watcher, error) {
@@ -27,6 +29,8 @@ func newWatcher() (*watcher, error) {
 	w := new(watcher)
 	w.inner = innerWatcher
 	w.dirs = make(map[string]bool)
+	w.closing = make(chan bool, 1)
+	w.closed = make(chan bool, 1)
 	return w, nil
 }
 
@@ -64,27 +68,32 @@ func (w watcher) watch(handler watcherHandler) {
 						if f.IsDir() {
 							_ = w.addDirs(ev.Name)
 						}
-						handler.FileCreated(ev.Name)
+						go handler.FileCreated(ev.Name)
 					}
 				}
 				if ev.Op&(fsnotify.Remove|fsnotify.Rename) != 0 {
 					_ = w.inner.Remove(ev.Name)
-					handler.FileRemoved(ev.Name)
+					go handler.FileRemoved(ev.Name)
 				}
 				if ev.Op&fsnotify.Write != 0 {
 					if f, err := os.Stat(ev.Name); err == nil {
 						if !f.IsDir() {
-							handler.FileChanged(ev.Name)
+							go handler.FileChanged(ev.Name)
 						}
 					}
 				}
 			case err := <-w.inner.Errors:
 				log.Println(err.Error())
+			case <-w.closing:
+				w.closed <- true
+				return
 			}
 		}
 	}()
 }
 
 func (w watcher) close() error {
+	w.closing <- true
+	<-w.closed
 	return w.inner.Close()
 }
