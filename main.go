@@ -73,4 +73,6 @@ func main() {
 		}
 		break
 	}
+
+	_ = srv.Shutdown()
 }
