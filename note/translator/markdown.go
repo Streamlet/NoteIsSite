@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	"github.com/BurntSushi/toml"
 	"github.com/go-yaml/yaml"
-	"github.com/gomarkdown/markdown"
-	"github.com/gomarkdown/markdown/html"
-	"github.com/gomarkdown/markdown/parser"
+	"github.com/yuin/goldmark"
 	"io/ioutil"
 	"regexp"
 	"time"
@@ -31,14 +29,11 @@ func (t markdownTranslator) Translate() ([]byte, error) {
 
 	content = parseHugoHeader(content)
 
-	extensions := parser.CommonExtensions
-	p := parser.NewWithExtensions(extensions)
-
-	htmlFlags := html.CommonFlags
-	opts := html.RendererOptions{Flags: htmlFlags}
-	renderer := html.NewRenderer(opts)
-
-	htmlContent := markdown.ToHTML(content, p, renderer)
+	var buffer bytes.Buffer
+	if err := goldmark.Convert(content, &buffer); err != nil {
+		return nil, err
+	}
+	htmlContent := buffer.Bytes()
 	return htmlContent, nil
 }
 
