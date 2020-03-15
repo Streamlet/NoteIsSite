@@ -151,6 +151,7 @@ func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, patter
 			self.subItems = make([]*node, 0)
 			subIsNote := isNote
 			uriName := self.name
+			patternForChildren := pattern
 			if isNote {
 				if conf, err := config.GetCategoryConfig(self.absolutePath); err == nil && conf != nil {
 					subIsNote = true
@@ -165,7 +166,7 @@ func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, patter
 						self.index = conf.Index
 					}
 					if conf.NoteFileRegExp != nil {
-						pattern = conf.NoteFileRegExp
+						patternForChildren = conf.NoteFileRegExp
 					}
 				} else if conf, err := config.GetResourceConfig(self.absolutePath); err == nil && conf != nil {
 					subIsNote = false
@@ -181,7 +182,7 @@ func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, patter
 				nr.uriNodeMap[self.absoluteUri] = self
 				parent.subItems = append(parent.subItems, self)
 			}
-			if err := nr.buildTree(self.absoluteUri, self.absolutePath, subIsNote, pattern, self); err != nil {
+			if err := nr.buildTree(self.absoluteUri, self.absolutePath, subIsNote, patternForChildren, self); err != nil {
 				return err
 			}
 		} else {
