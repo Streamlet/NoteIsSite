@@ -33,6 +33,30 @@ func (item BasicItem) Root() *BasicItem {
 	return root
 }
 
+func (item BasicItem) Prev() *BasicItem {
+	if item.Parent == nil {
+		return nil
+	}
+	for i, p := range item.Parent.Children {
+		if p.Uri == item.Uri && i > 0 {
+			return item.Parent.Children[i-1]
+		}
+	}
+	return nil
+}
+
+func (item BasicItem) Next() *BasicItem {
+	if item.Parent == nil {
+		return nil
+	}
+	for i, p := range item.Parent.Children {
+		if p.Uri == item.Uri && i+1 < len(item.Parent.Children) {
+			return item.Parent.Children[i+1]
+		}
+	}
+	return nil
+}
+
 func (item BasicItem) Ancestors() []*BasicItem {
 	ancestors := make([]*BasicItem, 0)
 	for p := &item; p != nil; p = p.Parent {
