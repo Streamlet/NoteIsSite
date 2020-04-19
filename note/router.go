@@ -147,7 +147,7 @@ func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, patter
 		self.absolutePath = filepath.Join(dir, f.Name())
 		self.name = f.Name()
 		self.parent = parent
-		if f.IsDir() {
+		if f.IsDir() || (f.Mode()&os.ModeSymlink) != 0 {
 			self.subItems = make([]*node, 0)
 			subIsNote := isNote
 			uriName := self.name
