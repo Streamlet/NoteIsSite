@@ -2,9 +2,10 @@ package config
 
 import (
 	"fmt"
+	"regexp"
+
 	"github.com/BurntSushi/toml"
 	"github.com/Streamlet/NoteIsSite/util"
-	"regexp"
 )
 
 type SiteConfig struct {

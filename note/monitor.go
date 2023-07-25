@@ -1,11 +1,12 @@
 package note
 
 import (
-	"github.com/Streamlet/NoteIsSite/util"
-	"github.com/fsnotify/fsnotify"
 	"io/ioutil"
 	"log"
 	"os"
+
+	"github.com/Streamlet/NoteIsSite/util"
+	"github.com/fsnotify/fsnotify"
 )
 
 type watcherHandler interface {

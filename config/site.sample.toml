@@ -14,7 +14,7 @@ port = 80
 template_root = "template/sample"
 
 # directories in template_root to be output staticly
-static_dirs = [ "assets" ]
+static_dirs = ["assets"]
 
 # files used by template system in template_root
 index_template = "index.template.html"

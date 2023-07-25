@@ -3,10 +3,11 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/Streamlet/NoteIsSite/global"
 	"net"
 	"net/http"
 	"os"
+
+	"github.com/Streamlet/NoteIsSite/global"
 )
 
 type HttpServer interface {

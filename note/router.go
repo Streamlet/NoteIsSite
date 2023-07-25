@@ -1,10 +1,6 @@
 package note
 
 import (
-	"github.com/Streamlet/NoteIsSite/config"
-	"github.com/Streamlet/NoteIsSite/note/translator"
-	"github.com/Streamlet/NoteIsSite/template"
-	"github.com/Streamlet/NoteIsSite/util"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -13,6 +9,11 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+
+	"github.com/Streamlet/NoteIsSite/config"
+	"github.com/Streamlet/NoteIsSite/note/translator"
+	"github.com/Streamlet/NoteIsSite/template"
+	"github.com/Streamlet/NoteIsSite/util"
 )
 
 type Router interface {

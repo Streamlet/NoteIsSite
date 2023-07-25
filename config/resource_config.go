@@ -3,7 +3,7 @@ package config
 import "github.com/BurntSushi/toml"
 
 type ResourceConfig struct {
-	Name    string `toml:"name"`
+	Name string `toml:"name"`
 }
 
 func GetResourceConfig(dirPath string) (*ResourceConfig, error) {

@@ -3,12 +3,13 @@ package translator
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/BurntSushi/toml"
-	"github.com/go-yaml/yaml"
-	"github.com/yuin/goldmark"
 	"io/ioutil"
 	"regexp"
 	"time"
+
+	"github.com/BurntSushi/toml"
+	"github.com/go-yaml/yaml"
+	"github.com/yuin/goldmark"
 )
 
 type markdownTranslator struct {

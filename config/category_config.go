@@ -1,8 +1,9 @@
 package config
 
 import (
-	"github.com/BurntSushi/toml"
 	"regexp"
+
+	"github.com/BurntSushi/toml"
 )
 
 type CategoryConfig struct {

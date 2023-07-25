@@ -2,10 +2,11 @@ package template
 
 import (
 	"bytes"
-	"github.com/Streamlet/NoteIsSite/config"
 	"io/ioutil"
 	"sync"
 	"text/template"
+
+	"github.com/Streamlet/NoteIsSite/config"
 )
 
 type BasicItem struct {
