@@ -8,7 +8,7 @@ a dynamic website system generated from notes.
 ## Build & Run
 ```bash
 go build
-./NoteIsSite --config=config/site.sample.config
+./NoteIsSite --config=config/site.sample.toml
 ```
 
 Then use your browser to visit <http://localhost/> .

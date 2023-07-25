@@ -16,7 +16,7 @@ func newRouter(noteRoot string, templateRoot string) (http.Handler, error) {
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		content, err := notesRouter.Route(r.RequestURI)
+		content, err := notesRouter.Route(r.URL.Path)
 		if err != nil {
 			if os.IsNotExist(err) {
 				log.Println(r.RequestURI, "404:", err.Error())
