@@ -31,4 +31,4 @@ jobs:
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: NoteIsSite.tar.gz
-        asset_name: NoteIsSite_${{ github.ref }}.tar.gz
+        asset_name: NoteIsSite_${{ github.ref_name }}.tar.gz
