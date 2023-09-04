@@ -3,13 +3,16 @@ package translator
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"github.com/yuin/goldmark/extension"
+	"os"
 	"regexp"
 	"time"
 
 	"github.com/BurntSushi/toml"
+	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/go-yaml/yaml"
 	"github.com/yuin/goldmark"
+	highlighting "github.com/yuin/goldmark-highlighting/v2"
 )
 
 type markdownTranslator struct {
@@ -23,15 +26,26 @@ func newMarkdownTranslator(path string) *markdownTranslator {
 }
 
 func (t markdownTranslator) Translate() ([]byte, error) {
-	content, err := ioutil.ReadFile(t.path)
+	content, err := os.ReadFile(t.path)
 	if err != nil {
 		return nil, err
 	}
 
 	content = parseHugoHeader(content)
 
+	md := goldmark.New(
+		goldmark.WithExtensions(
+			extension.GFM,
+			highlighting.NewHighlighting(
+				highlighting.WithStyle("vs"),
+				highlighting.WithFormatOptions(
+					chromahtml.WithLineNumbers(true),
+				),
+			)),
+	)
+
 	var buffer bytes.Buffer
-	if err := goldmark.Convert(content, &buffer); err != nil {
+	if err := md.Convert(content, &buffer); err != nil {
 		return nil, err
 	}
 	htmlContent := buffer.Bytes()
