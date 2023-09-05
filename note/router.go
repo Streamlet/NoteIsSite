@@ -113,7 +113,11 @@ func (nr *notesRouter) Route(uri string) (content []byte, mimeType string, err e
 	if err != nil {
 		return nr.templateExecutor.Get500(), "", err
 	}
-	return b, "text/html", nil
+	mimeType = ""
+	if n.isNote {
+		mimeType = "text/html"
+	}
+	return b, mimeType, nil
 }
 
 func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, pattern *regexp.Regexp, parent *node) error {
