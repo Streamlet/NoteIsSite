@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 
 	"github.com/Streamlet/NoteIsSite/note"
 )
@@ -17,7 +18,7 @@ func newRouter(noteRoot string, templateRoot string) (http.Handler, error) {
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		content, err := notesRouter.Route(r.URL.Path)
+		content, mimeType, err := notesRouter.Route(r.URL.Path)
 		if err != nil {
 			if os.IsNotExist(err) {
 				log.Println(r.RequestURI, "404:", err.Error())
@@ -27,16 +28,13 @@ func newRouter(noteRoot string, templateRoot string) (http.Handler, error) {
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 		} else {
-			if urlParts, err := url.Parse(r.RequestURI); err == nil {
-				path := urlParts.EscapedPath()
-				for i := len(path) - 1; i >= 0 && !os.IsPathSeparator(path[i]); i-- {
-					if path[i] == '.' {
-						if mimeType := mime.TypeByExtension(path[i:]); mimeType != "" {
-							w.Header().Add("Content-Type", mimeType)
-						} else {
-							w.Header().Add("Content-Type", "application/octet-stream")
-						}
-						break
+			if mimeType == "" {
+				if urlParts, err := url.Parse(r.RequestURI); err == nil {
+					ext := filepath.Ext(urlParts.Path)
+					if mimeType := mime.TypeByExtension(ext); mimeType != "" {
+						w.Header().Add("Content-Type", mimeType)
+					} else {
+						w.Header().Add("Content-Type", "application/octet-stream")
 					}
 				}
 			}

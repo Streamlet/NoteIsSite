@@ -1,7 +1,6 @@
 package note
 
 import (
-	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
@@ -17,7 +16,7 @@ import (
 )
 
 type Router interface {
-	Route(uri string) ([]byte, error)
+	Route(uri string) (content []byte, mimeType string, err error)
 }
 
 type notesRouter struct {
@@ -29,11 +28,6 @@ type notesRouter struct {
 	watcher    *watcher
 
 	templateExecutor template.Executor
-}
-
-type subItem struct {
-	uri   string
-	isDir bool
 }
 
 type node struct {
@@ -103,23 +97,27 @@ func (nr *notesRouter) rebuild() error {
 	return nil
 }
 
-func (nr notesRouter) Route(uri string) (content []byte, err error) {
+func (nr *notesRouter) Route(uri string) (content []byte, mimeType string, err error) {
 	normalizedUri, err := url.PathUnescape(uri)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	normalizedUri = strings.ToLower(normalizedUri)
 	nr.lock.RLock()
 	n, ok := nr.uriNodeMap[normalizedUri]
 	nr.lock.RUnlock()
 	if !ok {
-		return nr.templateExecutor.Get404(), os.ErrNotExist
+		return nr.templateExecutor.Get404(), "", os.ErrNotExist
 	}
-	return n.GetContent()
+	b, err := n.GetContent()
+	if err != nil {
+		return nr.templateExecutor.Get500(), "", err
+	}
+	return b, "text/html", nil
 }
 
 func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, pattern *regexp.Regexp, parent *node) error {
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		return err
 	}
@@ -148,7 +146,8 @@ func (nr *notesRouter) buildTree(baseUri string, dir string, isNote bool, patter
 		self.absolutePath = filepath.Join(dir, f.Name())
 		self.name = f.Name()
 		self.parent = parent
-		if f.IsDir() || (f.Mode()&os.ModeSymlink) != 0 {
+		fi, err := f.Info()
+		if f.IsDir() || (err == nil && (fi.Mode()&os.ModeSymlink) != 0) {
 			self.subItems = make([]*node, 0)
 			subIsNote := isNote
 			uriName := self.name

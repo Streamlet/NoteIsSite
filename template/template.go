@@ -2,7 +2,7 @@ package template
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 	"sync"
 	"text/template"
 
@@ -97,20 +97,20 @@ type templateData struct {
 
 func (td *templateData) Update(templateRoot string) error {
 	c := config.GetSiteConfig().Template
-	index, err := ioutil.ReadFile(templateRoot + "/" + c.IndexTemplate)
+	index, err := os.ReadFile(templateRoot + "/" + c.IndexTemplate)
 	if err != nil {
 		return err
 	}
-	category, err := ioutil.ReadFile(templateRoot + "/" + c.CategoryTemplate)
+	category, err := os.ReadFile(templateRoot + "/" + c.CategoryTemplate)
 	if err != nil {
 		return err
 	}
-	content, err := ioutil.ReadFile(templateRoot + "/" + c.ContentTemplate)
+	content, err := os.ReadFile(templateRoot + "/" + c.ContentTemplate)
 	if err != nil {
 		return err
 	}
-	err404, _ := ioutil.ReadFile(templateRoot + "/" + c.ErrorPage404)
-	err500, _ := ioutil.ReadFile(templateRoot + "/" + c.ErrorPage500)
+	err404, _ := os.ReadFile(templateRoot + "/" + c.ErrorPage404)
+	err500, _ := os.ReadFile(templateRoot + "/" + c.ErrorPage500)
 
 	defer td.lock.Unlock()
 	td.lock.Lock()
@@ -124,28 +124,28 @@ func (td *templateData) Update(templateRoot string) error {
 	return nil
 }
 
-func (td templateData) GetIndex(data PageData) ([]byte, error) {
+func (td *templateData) GetIndex(data PageData) ([]byte, error) {
 	defer td.lock.RUnlock()
 	td.lock.RLock()
 
 	return td.execute(td.indexTemplate, data)
 }
 
-func (td templateData) GetCategory(data PageData) ([]byte, error) {
+func (td *templateData) GetCategory(data PageData) ([]byte, error) {
 	defer td.lock.RUnlock()
 	td.lock.RLock()
 
 	return td.execute(td.categoryTemplate, data)
 }
 
-func (td templateData) GetContent(data PageData) ([]byte, error) {
+func (td *templateData) GetContent(data PageData) ([]byte, error) {
 	defer td.lock.RUnlock()
 	td.lock.RLock()
 
 	return td.execute(td.contentTemplate, data)
 }
 
-func (td templateData) execute(tmpl string, data interface{}) ([]byte, error) {
+func (td *templateData) execute(tmpl string, data interface{}) ([]byte, error) {
 	tt := template.New("")
 	_, err := tt.Parse(tmpl)
 	if err != nil {
@@ -161,14 +161,14 @@ func (td templateData) execute(tmpl string, data interface{}) ([]byte, error) {
 	return w.Bytes(), nil
 }
 
-func (td templateData) Get404() []byte {
+func (td *templateData) Get404() []byte {
 	defer td.lock.RUnlock()
 	td.lock.RLock()
 
 	return td.err404
 }
 
-func (td templateData) Get500() []byte {
+func (td *templateData) Get500() []byte {
 	defer td.lock.RUnlock()
 	td.lock.RLock()
 
