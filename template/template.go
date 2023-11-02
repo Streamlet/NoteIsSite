@@ -5,9 +5,17 @@ import (
 	"os"
 	"sync"
 	"text/template"
+	"time"
 
 	"github.com/Streamlet/NoteIsSite/config"
 )
+
+type Globals struct {
+}
+
+func (Globals) CurrentYear() string {
+	return time.Now().Format("2006")
+}
 
 type BasicItem struct {
 	Uri        string
@@ -18,6 +26,7 @@ type BasicItem struct {
 }
 
 type PageData struct {
+	Globals
 	*BasicItem
 	Content string
 }
