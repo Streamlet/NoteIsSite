@@ -2,7 +2,7 @@ package translator
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 )
 
 type textTranslator struct {
@@ -16,7 +16,7 @@ func newTextTranslator(path string) *textTranslator {
 }
 
 func (t textTranslator) Translate() ([]byte, error) {
-	content, err := ioutil.ReadFile(t.path)
+	content, err := os.ReadFile(t.path)
 	if err != nil {
 		return nil, err
 	}

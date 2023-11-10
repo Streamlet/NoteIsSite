@@ -1,6 +1,6 @@
 package translator
 
-import "io/ioutil"
+import "os"
 
 type defaultTranslator struct {
 	path string
@@ -13,5 +13,5 @@ func newDefaultTranslator(path string) *defaultTranslator {
 }
 
 func (t defaultTranslator) Translate() ([]byte, error) {
-	return ioutil.ReadFile(t.path)
+	return os.ReadFile(t.path)
 }

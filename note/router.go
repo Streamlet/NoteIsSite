@@ -282,8 +282,14 @@ func (n *node) GetContent() ([]byte, error) {
 		pageData.BasicItem = item
 	}
 	if n.subItems == nil {
-		t := translator.New(n.absolutePath)
-		content, err := t.Translate()
+		var content []byte
+		var err error
+		if n.isNote {
+			t := translator.New(n.absolutePath)
+			content, err = t.Translate()
+		} else {
+			content, err = os.ReadFile(n.absolutePath)
+		}
 		if err != nil {
 			if os.IsNotExist(err) {
 				return n.templateExecutor.Get404(), err
